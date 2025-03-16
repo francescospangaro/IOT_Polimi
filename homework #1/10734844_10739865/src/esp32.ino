@@ -159,13 +159,14 @@ void loop() {
   // Send the message to the sink node
   send_message(message);
 
-
-  //Serial.println("--------------BOARD TIMES--------------");
-  //Serial.println("\tTime spent in setup: " + String(t_setup_total));
-  //Serial.println("\tTime spent measuring the distance: " + String(t_measure_total));
-  //Serial.println("\tTime spent for transmitting the result: " + String(t_transmission_total));
-  //Serial.println("\tTime spent in deep sleep: " + String(t_deep_sleep_total));
-  //Serial.println("\tTime spent in deep sleep: " + String(t_deep_sleep_total));
+  DEBUG_PRINT("-------------------BOARD TIMES-------------------");
+  DEBUG_PRINT("\tTime spent in setup: " + String(t_setup_total));
+  DEBUG_PRINT("\tTime spent measuring the distance: " + String(t_measure_total));
+  DEBUG_PRINT("\tTime spent for transmitting the result: " + String(t_transmission_total));
+  DEBUG_PRINT("\tTime spent for execution: " + String(t_execution));
+  DEBUG_PRINT("\tTime spent with WiFi off: " + String(t_wifi_off));
+  DEBUG_PRINT("\tTime spent with WiFi on: " + String(t_wifi_on));
+  DEBUG_PRINT("\tTime spent in deep sleep: " + String(t_deep_sleep_total));
 
 
   // Setting the timer for waking up the board (board woke up after: (44 % 50) + 5 = 49s)
