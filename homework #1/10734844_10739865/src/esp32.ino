@@ -21,7 +21,7 @@ float t_setup_total;
 float t_measure_total;
 float t_transmission_total;
 float t_execution;
-float t_deep_sleep_total = 0;
+float t_deep_sleep_total;
 float t_wifi_off;
 float t_wifi_on;
 
@@ -93,25 +93,6 @@ void send_message(String message){
   t_transmission_total = millis() - t_transmission_total;
 }
 
-void setup() {
-  t_setup_total = millis();
-  Serial.begin(115200);
-  DEBUG_PRINT("\n-------------------SETUP-------------------");
-  DEBUG_PRINT("\tBoard woke up at: "+String(t_setup_total)+"ms");
-
-  // Starting with WIFI module off
-  DEBUG_PRINT("\tTurning off the WIFI module...");
-  WiFi.mode(WIFI_OFF);
-  t_wifi_off = millis();
-  // Setup HC_SR04 sensor's PINs
-  DEBUG_PRINT("\tConfiguring the HC_SR04 sensor...");
-  setup_hcsr04();
-  DEBUG_PRINT("\t## Completed! ##");
-
-
-  // Compute the total time required by the board setup
-  t_setup_total = millis() - t_setup_total;
-}
 
 float performDistanceRead() {
   // Start of the distance reading process
@@ -144,6 +125,26 @@ float performDistanceRead() {
   return distance;
 }
 
+void setup() {
+  t_setup_total = millis();
+  Serial.begin(115200);
+  DEBUG_PRINT("\n-------------------SETUP-------------------");
+  DEBUG_PRINT("\tBoard woke up at: "+String(t_setup_total)+"ms");
+
+  // Starting with WIFI module off
+  DEBUG_PRINT("\tTurning off the WIFI module...");
+  WiFi.mode(WIFI_OFF);
+  t_wifi_off = millis();
+  // Setup HC_SR04 sensor's PINs
+  DEBUG_PRINT("\tConfiguring the HC_SR04 sensor...");
+  setup_hcsr04();
+  DEBUG_PRINT("\t## Completed! ##");
+
+
+  // Compute the total time required by the board setup
+  t_setup_total = millis() - t_setup_total;
+}
+
 void loop() {
   // Compute the distance
   distance = performDistanceRead();
@@ -159,16 +160,6 @@ void loop() {
   // Send the message to the sink node
   send_message(message);
 
-  DEBUG_PRINT("-------------------BOARD TIMES-------------------");
-  DEBUG_PRINT("\tTime spent in setup: " + String(t_setup_total));
-  DEBUG_PRINT("\tTime spent measuring the distance: " + String(t_measure_total));
-  DEBUG_PRINT("\tTime spent for transmitting the result: " + String(t_transmission_total));
-  DEBUG_PRINT("\tTime spent for execution: " + String(t_execution));
-  DEBUG_PRINT("\tTime spent with WiFi off: " + String(t_wifi_off));
-  DEBUG_PRINT("\tTime spent with WiFi on: " + String(t_wifi_on));
-  DEBUG_PRINT("\tTime spent in deep sleep: " + String(t_deep_sleep_total));
-
-
   // Setting the timer for waking up the board (board woke up after: (44 % 50) + 5 = 49s)
   int wake_up_timer = DUTY_CYCLE_DURATION * S_TO_US;
   DEBUG_PRINT("\tConfiguring the board to wake up at: "+String(millis()+wake_up_timer));
@@ -177,7 +168,16 @@ void loop() {
   
   t_execution = t_setup_total + t_measure_total + t_transmission_total;
   t_wifi_off = t_execution - t_wifi_on;
-  t_deep_sleep_total = wake_up_timer/1000 - t_execution;
+  t_deep_sleep_total = wake_up_timer/1000;
+
+  DEBUG_PRINT("-------------------BOARD TIMES-------------------");
+  DEBUG_PRINT("\tTime spent in setup: " + String(t_setup_total));
+  DEBUG_PRINT("\tTime spent measuring the distance: " + String(t_measure_total));
+  DEBUG_PRINT("\tTime spent for transmitting the result: " + String(t_transmission_total));
+  DEBUG_PRINT("\tTime spent for execution: " + String(t_execution));
+  DEBUG_PRINT("\tTime spent with WiFi off: " + String(t_wifi_off));
+  DEBUG_PRINT("\tTime spent with WiFi on: " + String(t_wifi_on));
+  DEBUG_PRINT("\tTime spent in deep sleep: " + String(t_deep_sleep_total));
 
   Serial.println(String(t_setup_total)+","+String(t_measure_total)+","+String(t_transmission_total)+","+String(t_execution)+","+String(t_deep_sleep_total)+","+String(t_wifi_on)+","+String(t_wifi_off));
 
