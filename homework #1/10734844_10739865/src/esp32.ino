@@ -24,6 +24,7 @@ float t_execution;
 float t_deep_sleep_total;
 float t_wifi_off;
 float t_wifi_on;
+float t_sensor_idle;
 
 
 // MAC receiver
@@ -167,19 +168,21 @@ void loop() {
 
   
   t_execution = t_setup_total + t_measure_total + t_transmission_total;
+  t_sensor_idle = t_setup_total + t_transmission_total;
   t_wifi_off = t_execution - t_wifi_on;
   t_deep_sleep_total = wake_up_timer/1000;
 
   DEBUG_PRINT("-------------------BOARD TIMES-------------------");
-  DEBUG_PRINT("\tTime spent in setup: " + String(t_setup_total));
-  DEBUG_PRINT("\tTime spent measuring the distance: " + String(t_measure_total));
-  DEBUG_PRINT("\tTime spent for transmitting the result: " + String(t_transmission_total));
-  DEBUG_PRINT("\tTime spent for execution: " + String(t_execution));
-  DEBUG_PRINT("\tTime spent with WiFi off: " + String(t_wifi_off));
-  DEBUG_PRINT("\tTime spent with WiFi on: " + String(t_wifi_on));
-  DEBUG_PRINT("\tTime spent in deep sleep: " + String(t_deep_sleep_total));
+  DEBUG_PRINT("\tTime spent in setup: " + String(t_setup_total) + "ms");
+  DEBUG_PRINT("\tTime spent measuring the distance: " + String(t_measure_total) + "ms");
+  DEBUG_PRINT("\tTime spent for transmitting the result: " + String(t_transmission_total) + "ms");
+  DEBUG_PRINT("\tTime spent for execution: " + String(t_execution) + "ms");
+  DEBUG_PRINT("\tTime spent in idle by the sensor: " + String(t_sensor_idle) + "ms");
+  DEBUG_PRINT("\tTime spent with WiFi off: " + String(t_wifi_off) + "ms");
+  DEBUG_PRINT("\tTime spent with WiFi on: " + String(t_wifi_on) + "ms");
+  DEBUG_PRINT("\tTime spent in deep sleep: " + String(t_deep_sleep_total) + "ms");
 
-  Serial.println(String(t_setup_total)+","+String(t_measure_total)+","+String(t_transmission_total)+","+String(t_execution)+","+String(t_deep_sleep_total)+","+String(t_wifi_on)+","+String(t_wifi_off));
+  Serial.println(String(t_setup_total)+","+String(t_measure_total)+","+String(t_transmission_total)+","+String(t_execution)+","+String(t_sensor_idle)+","+String(t_deep_sleep_total)+","+String(t_wifi_on)+","+String(t_wifi_off));
 
   DEBUG_PRINT("Board going into deep sleep....");
   esp_deep_sleep_start();
