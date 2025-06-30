@@ -1,0 +1,842 @@
+[
+    {
+        "id": "4c1277e65acfd709",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "33b0c803ca6c4d15",
+        "type": "inject",
+        "z": "4c1277e65acfd709",
+        "name": "Generate ID every 5s",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "5",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 160,
+        "y": 300,
+        "wires": [
+            [
+                "9b3da732566138b7"
+            ]
+        ]
+    },
+    {
+        "id": "9b3da732566138b7",
+        "type": "function",
+        "z": "4c1277e65acfd709",
+        "name": "prepare_payloads_fn",
+        "func": "// Max ID value\nconst MAX = 30000;\n// Taking a random number\nvar random = Math.floor(Math.random() * MAX);\n// Taking current timestamp\nvar timestamp = Date.now();\n\n// Updating the id message counter to save it in the CSV file\nvar counter = context.get(\"counter\");\ncounter += 1;\n\n// Payload to send to the MQTT broker\nvar payload_to_broker = {\n    \"id\": random,\n    \"timestamp\": timestamp\n};\n// Payload to send to the CSV\nvar payload_to_csv = {\n    \"No.\": counter,\n    \"ID\": random,\n    \"TIMESTAMP\": timestamp\n};\n\ncontext.set(\"counter\", counter);\n// Message to send to the MQTT broker\nvar msg1 = {\n    payload: payload_to_broker\n};\n// Message to send to the CSV file\nvar msg2 = {\n    payload: payload_to_csv\n};\n\nreturn [msg1, msg2];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\nif (context.get(\"counter\") === undefined) {\n    context.set(\"counter\", 0);\n}",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 300,
+        "wires": [
+            [
+                "91c88edccb9fd682",
+                "f82f1bf216729ac1"
+            ],
+            [
+                "1616eb16686c5e0c"
+            ]
+        ]
+    },
+    {
+        "id": "91c88edccb9fd682",
+        "type": "mqtt out",
+        "z": "4c1277e65acfd709",
+        "name": "",
+        "topic": "challenge3/id_generator",
+        "qos": "0",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "0fe24460799d526f",
+        "x": 670,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "97bea6201bf3188a",
+        "type": "csv",
+        "z": "4c1277e65acfd709",
+        "name": "",
+        "sep": ",",
+        "hdrin": true,
+        "hdrout": "once",
+        "multi": "one",
+        "ret": "\\n",
+        "temp": "No.,ID,TIMESTAMP",
+        "skip": "0",
+        "strings": true,
+        "include_empty_strings": "",
+        "include_null_values": "",
+        "x": 750,
+        "y": 360,
+        "wires": [
+            [
+                "1451bc8563c98f38"
+            ]
+        ]
+    },
+    {
+        "id": "1451bc8563c98f38",
+        "type": "file",
+        "z": "4c1277e65acfd709",
+        "name": "Store ID_log CSV file",
+        "filename": "/workspaces/Chall3/data/id_log.csv",
+        "filenameType": "str",
+        "appendNewline": false,
+        "createDir": true,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 960,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "f82f1bf216729ac1",
+        "type": "debug",
+        "z": "4c1277e65acfd709",
+        "name": "Published generated ID",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 650,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "1616eb16686c5e0c",
+        "type": "json",
+        "z": "4c1277e65acfd709",
+        "name": "",
+        "property": "payload",
+        "action": "obj",
+        "pretty": true,
+        "x": 590,
+        "y": 360,
+        "wires": [
+            [
+                "97bea6201bf3188a"
+            ]
+        ]
+    },
+    {
+        "id": "84621c89986a30b3",
+        "type": "mqtt in",
+        "z": "4c1277e65acfd709",
+        "name": "",
+        "topic": "challenge3/id_generator",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "0fe24460799d526f",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 100,
+        "y": 480,
+        "wires": [
+            [
+                "aa6be077193a5e1e"
+            ]
+        ]
+    },
+    {
+        "id": "ac9694cfc6d82d3e",
+        "type": "function",
+        "z": "4c1277e65acfd709",
+        "name": "prepare_publish_mqtt_packets_fn",
+        "func": "// Gather data from input msg\nconst csvData = msg.payload.csv\nconst mqtt_mess = msg.payload.mqtt_message\n\n// Retrieve msg ID from the MQTT msg received\nconst id = mqtt_mess.id;\n\n// Compute N and retrieve the corresponding msg from the csv\nvar N = id % 7711;\nvar msg_from_csv = csvData.filter((row) => row[\"No.\"]==N)[0];\n\n// Initialize the messages to return\nvar msgs_to_publish = null;\nvar ack_msg = null;\n\n// If the computed N is 0, ignore the messages\nif (N == 0) {\n    return [null, null];\n}\n// Filtering the MQTT messages of type PUBLISH\nif (msg_from_csv[\"Info\"].includes(\"Publish Message\")) {\n    msgs_to_publish = [];\n    // Splitting the different PUBLISH messages in the same MQTT packet\n    var messages = msg_from_csv[\"Info\"].split(\",\");\n    // Necessary to split for \"[\", because some Publish msg has (id=<number>) between \"Publish Message\" and the topic\n    var topics = messages.map((el)=> el.split(\"[\")[1].slice(0, -1));\n    // Handling malformed messages' payload\n    try {\n        var payloads = JSON.parse(`[${msg_from_csv[\"Payload\"]}]`);\n    } catch (e) {\n        return [null, null];\n    }\n    \n    // Building the messages to publish\n    for (var i = 0; i<topics.length;i++) {\n        msgs_to_publish.push({\n                \"timestamp\": Date.now(),\n                \"id\": id,\n                \"topic\": topics[i],\n                \"payload\": (i < payloads.length ? (payloads[i]==null ? {} : payloads[i]) : {}),\n        });\n    } \n}\n// Filtering the MQTT messages of type ACK\nif (msg_from_csv[\"Info\"].includes(\"Ack\")) {\n    // Obtaining the type of the message without its ID\n    var type = msg_from_csv[\"Info\"].split(\" (\")[0];\n    // Updating the global ACK message counter\n    var ack_counter = global.get(\"ack_counter\") + 1\n    global.set(\"ack_counter\", ack_counter);\n\n    // Building the ACK message to store\n    ack_msg = {\n        \"payload\": {\n            \"No.\": ack_counter,\n            \"TIMESTAMP\": Date.now(),\n            \"SUB_ID\": id,\n            \"MSG_TYPE\": type\n            }\n    };\n}\n\nreturn [msgs_to_publish, ack_msg];\n\n\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\nif (global.get(\"ack_counter\") === undefined) {\n    global.set(\"ack_counter\", 0)\n}",
+        "finalize": "",
+        "libs": [],
+        "x": 1280,
+        "y": 520,
+        "wires": [
+            [
+                "6ae0bcd14488eb34"
+            ],
+            [
+                "2bca24cbcda8bdf3",
+                "2bbcce49b24299b3",
+                "5ee0ee09c86e51d8"
+            ]
+        ]
+    },
+    {
+        "id": "d58016daf67c1bc4",
+        "type": "file in",
+        "z": "4c1277e65acfd709",
+        "name": "Read challenge3 CSV file",
+        "filename": "/workspaces/Chall3/data/challenge3.csv",
+        "filenameType": "str",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 250,
+        "y": 580,
+        "wires": [
+            [
+                "80bb1555d544a840"
+            ]
+        ]
+    },
+    {
+        "id": "2691f1f69e8c84a3",
+        "type": "file",
+        "z": "4c1277e65acfd709",
+        "name": "",
+        "filename": "/workspaces/Chall3/data/id_log.csv",
+        "filenameType": "str",
+        "appendNewline": false,
+        "createDir": true,
+        "overwriteFile": "true",
+        "encoding": "none",
+        "x": 460,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "80bb1555d544a840",
+        "type": "csv",
+        "z": "4c1277e65acfd709",
+        "name": "Convert CSV to JSON",
+        "sep": ",",
+        "hdrin": true,
+        "hdrout": "none",
+        "multi": "mult",
+        "ret": "\\n",
+        "temp": "No.,Time,Source,Destination,Protocol,Length,Source Port,Destination Port,Info,Payload",
+        "skip": "0",
+        "strings": true,
+        "include_empty_strings": true,
+        "include_null_values": true,
+        "x": 480,
+        "y": 580,
+        "wires": [
+            [
+                "21701ced8da04554"
+            ]
+        ]
+    },
+    {
+        "id": "bacf20df185e95bb",
+        "type": "join",
+        "z": "4c1277e65acfd709",
+        "name": "Join in 1 msg, mqtt msg and CSV",
+        "mode": "custom",
+        "build": "object",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": false,
+        "timeout": "",
+        "count": "2",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "num",
+        "reduceFixup": "",
+        "x": 960,
+        "y": 520,
+        "wires": [
+            [
+                "ac9694cfc6d82d3e"
+            ]
+        ]
+    },
+    {
+        "id": "6311c1551efd8f02",
+        "type": "function",
+        "z": "4c1277e65acfd709",
+        "name": "prepare_mqtt_msg_fn",
+        "func": "// Change MQTT message's topic in order to join it with the CSV content\nmsg.topic = \"mqtt_message\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 620,
+        "y": 480,
+        "wires": [
+            [
+                "bacf20df185e95bb"
+            ]
+        ]
+    },
+    {
+        "id": "21701ced8da04554",
+        "type": "function",
+        "z": "4c1277e65acfd709",
+        "name": "prepare_csv_fn",
+        "func": "// Change message's topic containing the CSV file to join it with the MQTT message\nmsg.topic = \"csv\"\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 680,
+        "y": 580,
+        "wires": [
+            [
+                "bacf20df185e95bb"
+            ]
+        ]
+    },
+    {
+        "id": "3b00938b3b38270c",
+        "type": "mqtt out",
+        "z": "4c1277e65acfd709",
+        "name": "Publish",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "0fe24460799d526f",
+        "x": 1860,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "363a0f149d37c1e6",
+        "type": "debug",
+        "z": "4c1277e65acfd709",
+        "name": "Published message(s)",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1900,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "6ae0bcd14488eb34",
+        "type": "delay",
+        "z": "4c1277e65acfd709",
+        "name": "",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "4",
+        "nbRateUnits": "1",
+        "rateUnits": "minute",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1570,
+        "y": 500,
+        "wires": [
+            [
+                "efa1e3d4e32961db",
+                "363a0f149d37c1e6",
+                "3b00938b3b38270c"
+            ]
+        ]
+    },
+    {
+        "id": "2bca24cbcda8bdf3",
+        "type": "csv",
+        "z": "4c1277e65acfd709",
+        "name": "",
+        "sep": ",",
+        "hdrin": "",
+        "hdrout": "once",
+        "multi": "one",
+        "ret": "\\n",
+        "temp": "No.,TIMESTAMP,SUB_ID,MSG_TYPE",
+        "skip": "0",
+        "strings": true,
+        "include_empty_strings": "",
+        "include_null_values": "",
+        "x": 1670,
+        "y": 580,
+        "wires": [
+            [
+                "1f0d31a440f4f7ac"
+            ]
+        ]
+    },
+    {
+        "id": "1f0d31a440f4f7ac",
+        "type": "file",
+        "z": "4c1277e65acfd709",
+        "name": "Store ack_log CSV file",
+        "filename": "/workspaces/Chall3/data/ack_log.csv",
+        "filenameType": "str",
+        "appendNewline": false,
+        "createDir": true,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 1880,
+        "y": 580,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2bbcce49b24299b3",
+        "type": "debug",
+        "z": "4c1277e65acfd709",
+        "name": "Ack message",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1700,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "efa1e3d4e32961db",
+        "type": "function",
+        "z": "4c1277e65acfd709",
+        "name": "filter temperature messages in Fahrenheit",
+        "func": "// Filter the PUBLISH messages that contain a temperature in fahrenheit\nif (msg.payload[\"type\"]==\"temperature\" && msg.payload[\"unit\"]==\"F\") {\n    // Computing the average temperature\n    var temps = msg.payload[\"range\"];\n    var avg_temp = Math.round((temps[0] + temps[1])/2);\n\n    // Creating the message to send to the chart node to plot the temp value\n    var value_to_plot = {\n        \"payload\": avg_temp\n    };\n\n    // Updating the counter for filtered publish messages\n    var count = context.get(\"filtered_pubs_counter\");\n    count += 1;\n    context.set(\"filtered_pubs_counter\", count);\n\n    // Building the message to store\n    var msg_to_save = {\n        \"payload\": {\n            \"No.\": count,\n            \"LONG\": msg.payload.long,\n            \"LAT\": msg.payload.lat,\n            \"MEAN_VALUE\": avg_temp,\n            \"TYPE\": msg.payload.type,\n            \"UNIT\": msg.payload.unit,\n            \"DESCRIPTION\": msg.payload.description\n    }};\n    return [value_to_plot, msg_to_save];\n}\n\nreturn [null, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\nif (context.get(\"filtered_pubs_counter\") === undefined) {\n    context.set(\"filtered_pubs_counter\", 0)\n}",
+        "finalize": "",
+        "libs": [],
+        "x": 1880,
+        "y": 360,
+        "wires": [
+            [
+                "9ad5a38cd9e2f5c7",
+                "400fe161e5807b5e"
+            ],
+            [
+                "26e686f6f860b564"
+            ]
+        ]
+    },
+    {
+        "id": "9ad5a38cd9e2f5c7",
+        "type": "debug",
+        "z": "4c1277e65acfd709",
+        "name": "Value to plot",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 2170,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "26e686f6f860b564",
+        "type": "csv",
+        "z": "4c1277e65acfd709",
+        "name": "",
+        "sep": ",",
+        "hdrin": "",
+        "hdrout": "once",
+        "multi": "one",
+        "ret": "\\n",
+        "temp": "No.,LONG,LAT,MEAN_VALUE,TYPE,UNIT,DESCRIPTION",
+        "skip": "0",
+        "strings": true,
+        "include_empty_strings": "",
+        "include_null_values": "",
+        "x": 2130,
+        "y": 420,
+        "wires": [
+            [
+                "3cf57eecf1949ba0"
+            ]
+        ]
+    },
+    {
+        "id": "3cf57eecf1949ba0",
+        "type": "file",
+        "z": "4c1277e65acfd709",
+        "name": "Store filtered_publish CSV file",
+        "filename": "/workspaces/Chall3/data/filtered_publish.csv",
+        "filenameType": "str",
+        "appendNewline": false,
+        "createDir": true,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 2330,
+        "y": 420,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "64a31e7b79a043a4",
+        "type": "inject",
+        "z": "4c1277e65acfd709",
+        "name": "reset trigger",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "0.01",
+        "topic": "",
+        "payload": "",
+        "payloadType": "str",
+        "x": 150,
+        "y": 140,
+        "wires": [
+            [
+                "ca74cac833fe2469",
+                "f02ecc92ffc9a73f",
+                "2691f1f69e8c84a3",
+                "1483beae8c287127"
+            ]
+        ]
+    },
+    {
+        "id": "ca74cac833fe2469",
+        "type": "file",
+        "z": "4c1277e65acfd709",
+        "name": "",
+        "filename": "/workspaces/Chall3/data/ack_log.csv",
+        "filenameType": "str",
+        "appendNewline": false,
+        "createDir": true,
+        "overwriteFile": "true",
+        "encoding": "none",
+        "x": 470,
+        "y": 140,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "f02ecc92ffc9a73f",
+        "type": "file",
+        "z": "4c1277e65acfd709",
+        "name": "",
+        "filename": "/workspaces/Chall3/data/filtered_publish.csv",
+        "filenameType": "str",
+        "appendNewline": false,
+        "createDir": true,
+        "overwriteFile": "true",
+        "encoding": "none",
+        "x": 490,
+        "y": 100,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "aa6be077193a5e1e",
+        "type": "function",
+        "z": "4c1277e65acfd709",
+        "name": "80 messages limiter",
+        "func": "// Retrieving the counter for the processed messages\nvar counter = context.get(\"limiter_counter\");\ncounter+=1;\n\n// Stop the processing if we have already processed 80 messages\nif (counter == 80) {\n    node.warn(\"80 messages already processed, ignoring next messages...\");\n    return null;\n}\ncontext.set(\"limiter_counter\",counter);\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\n// whenever the node is started.\nif (context.get(\"limiter_counter\") === undefined) {\n    context.set(\"limiter_counter\", 0);\n}",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 480,
+        "wires": [
+            [
+                "6311c1551efd8f02",
+                "d58016daf67c1bc4"
+            ]
+        ]
+    },
+    {
+        "id": "95764f3a820149e0",
+        "type": "http request",
+        "z": "4c1277e65acfd709",
+        "name": "Send ack_counter to thingspeak",
+        "method": "use",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 2270,
+        "y": 700,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5ee0ee09c86e51d8",
+        "type": "function",
+        "z": "4c1277e65acfd709",
+        "name": "prepare_ack_counter",
+        "func": "// Preparing the HTTP parameters to send the ack counter to ThingSpeak\nmsg = {};\nmsg.method = \"GET\";\nmsg.url = \"https://api.thingspeak.com/update?api_key=GRIZ0FP04SH3Y48J&field1=\"+global.get(\"ack_counter\");\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1720,
+        "y": 700,
+        "wires": [
+            [
+                "10109f70c7d174c4"
+            ]
+        ]
+    },
+    {
+        "id": "1483beae8c287127",
+        "type": "function",
+        "z": "4c1277e65acfd709",
+        "name": "Reset ack_counter",
+        "func": "// Resetting the global ack counter every time the flow get re-deployed\nif (global.get(\"ack_counter\")) {\n    global.set(\"ack_counter\",0)\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 60,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "018c4b2334f7e691",
+        "type": "inject",
+        "z": "4c1277e65acfd709",
+        "name": "reset graph content",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "0.01",
+        "topic": "",
+        "payload": "",
+        "payloadType": "str",
+        "x": 1750,
+        "y": 300,
+        "wires": [
+            [
+                "57fe786104013899"
+            ]
+        ]
+    },
+    {
+        "id": "57fe786104013899",
+        "type": "function",
+        "z": "4c1277e65acfd709",
+        "name": "empty payload",
+        "func": "msg.payload = []\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1940,
+        "y": 300,
+        "wires": [
+            [
+                "400fe161e5807b5e"
+            ]
+        ]
+    },
+    {
+        "id": "10109f70c7d174c4",
+        "type": "delay",
+        "z": "4c1277e65acfd709",
+        "name": "Rate limiter for thingspeak free tier",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "20",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1980,
+        "y": 700,
+        "wires": [
+            [
+                "95764f3a820149e0"
+            ]
+        ]
+    },
+    {
+        "id": "400fe161e5807b5e",
+        "type": "ui_chart",
+        "z": "4c1277e65acfd709",
+        "name": "",
+        "group": "b7bcd921e421e051",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "label": "Temperature",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": true,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 2170,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "0fe24460799d526f",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "localhost",
+        "port": "1884",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "b7bcd921e421e051",
+        "type": "ui_group",
+        "name": "Default",
+        "tab": "42d3ed039ef929e6",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "42d3ed039ef929e6",
+        "type": "ui_tab",
+        "name": "Home",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    }
+]
